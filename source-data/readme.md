@@ -1,0 +1,1 @@
+this directory contains raw source data (probably mostly shapefiles and GPXs)
