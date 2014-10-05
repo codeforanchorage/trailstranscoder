@@ -1,27 +1,37 @@
-"""
-From:
-    http://gis.stackexchange.com/questions/39080/how-do-i-use-ogr2ogr-to-convert-a-gml-to-shapefile-in-python
+"""A toolchain for transcoding and cleaning Alaska trail data.
+
+Drop your data in source-data (unpacked), define a new config in scripts/configs,
+add the config to scripts/configs/__init__.py, then run this file.
 """
 
+# Global imports
+import os
+
+# Local imports
 import ogr2ogr
+import configs
 
-#note: main is expecting sys.argv, where the first argument is the script name
-#so, the argument indices in the array need to be offset by 1
-ogr2ogr.main(
-    [
+for config in configs.configList:
+    try:
+        os.remove(config["destination"])
+    except OSError:
+        pass
+    # note: main is expecting sys.argv, where the first argument is the script name
+    # so, the argument indices in the array need to be offset by 1
+    opts = [
         "",
         "-f",
         "GeoJSON",
         "-t_srs",
-        "crs:84",
-        "../temp-data/kincaid-bounding-box.geojson",
-        "../source-data/trails_shp",
-        "-select",
-        "SYSTEM_NAM,SURFACE,TRAIL_CLAS,TRAIL_NAME,LIGHTING,GRADE,SKI_TYPE",
+        config["crs"],
+        config["destination"],
+        config["source"],
+        "-sql",
+        config["sql"],
         "-clipdst",
-        "-150.1153",
-        "61.12301",
-        "-149.98707",
-        "61.18463"
-   ])
-
+        config["clip"]["southwest"][0],
+        config["clip"]["southwest"][1],
+        config["clip"]["northeast"][0],
+        config["clip"]["northeast"][1]
+    ]
+    ogr2ogr.main(opts)
