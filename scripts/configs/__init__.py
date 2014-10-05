@@ -1,7 +1,9 @@
 """Wrangle together all of the appropriate configs in this file
 """
-from .kincaid import config as kincaid
+
+from .kincaid import kincaid_all, kincaid_ski
 
 configList = (
-    kincaid,
+    kincaid_all,
+    kincaid_ski,
     )

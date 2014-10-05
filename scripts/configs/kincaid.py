@@ -1,7 +1,8 @@
 """Define your configuration below
 """
 
-config = {
+# First, lets prepare a config for all trails at Kincaid
+kincaid_all = {
     "crs": "crs:84",
     "source": "../source-data/trails_shp",
     "destination": "../temp-data/kincaid-bounding-box.geojson",
@@ -22,4 +23,10 @@ config = {
         "northeast": ["-149.98707", "61.18463"]
     }
 }
+
+# Then, we can start to extract sub-configs as needed
+# Kincaid ski trails
+kincaid_ski = kincaid_all.copy()
+kincaid_ski["destination"] = "../temp-data/kincaid-xc.geojson"
+kincaid_ski["sql"] += "WHERE SYSTEM_NAM = 'Kincaid Ski Trails'"
 
