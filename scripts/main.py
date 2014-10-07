@@ -5,47 +5,48 @@ add the config to scripts/configs/__init__.py, then run this file.
 """
 
 # Global imports
-import os
+from os import remove
 
 # Local imports
 import ogr2ogr
 import configs
 
-for config in configs.configList:
+def buildOpts(config):
+    # Note: main is expecting sys.argv, where the first argument is the script name
+    # so, the argument indices in the array need to be offset by 1
+    opts = ["", "-f", "GeoJSON"]
+
+    flagMap = {
+        "sql": "-sql",
+        "crs": "-t_srs",
+        "clip": "-clipdst",
+    }
+
+    for c in config:
+        if c in flagMap:
+            if c != "clip":
+                opts.extend([flagMap[c], config[c]])
+            else:
+                opts.extend([flagMap[c],
+                    config[c]["southwest"][0], config[c]["southwest"][1],
+                    config[c]["northeast"][0], config[c]["northeast"][1]])
+        else:
+            opts.append(config[c])
+
+    return opts
+
+def cleanup(config):
     try:
-        os.remove(config["destination"])
+        remove(config["destination"])
     except OSError:
         pass
-    # note: main is expecting sys.argv, where the first argument is the script name
-    # so, the argument indices in the array need to be offset by 1
-    if "clip" in config:
-        opts = [
-            "",
-            "-f",
-            "GeoJSON",
-            "-t_srs",
-            config["crs"],
-            config["destination"],
-            config["source"],
-            "-sql",
-            config["sql"],
-            "-clipdst",
-            config["clip"]["southwest"][0],
-            config["clip"]["southwest"][1],
-            config["clip"]["northeast"][0],
-            config["clip"]["northeast"][1]
-        ]
+
+def main():
+    for config in configs.configList:
+        cleanup(config)
+        opts = buildOpts(config)
         ogr2ogr.main(opts)
-    else:
-        opts = [
-            "",
-            "-f",
-            "GeoJSON",
-            "-t_srs",
-            config["crs"],
-            config["destination"],
-            config["source"],
-            "-sql",
-            config["sql"]
-        ]
-        ogr2ogr.main(opts)
+
+if __name__ == "__main__":
+    main()
+
