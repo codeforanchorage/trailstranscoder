@@ -14,12 +14,13 @@ import configs
 def buildOpts(config):
     # Note: main is expecting sys.argv, where the first argument is the script name
     # so, the argument indices in the array need to be offset by 1
-    opts = ["", "-f", "GeoJSON"]
+    opts = ["", "-f", "SQLite"]
 
     flagMap = {
         "sql": "-sql",
         "crs": "-t_srs",
         "clip": "-clipdst",
+        "newlayername": "-nln",
     }
 
     for c in config:
