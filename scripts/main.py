@@ -14,19 +14,23 @@ import configs
 def buildOpts(config):
     # Note: main is expecting sys.argv, where the first argument is the script name
     # so, the argument indices in the array need to be offset by 1
-    opts = ["", "-f", "SQLite"]
+    opts = ["", "-f", "SQLite", configs.temp_path]
 
     flagMap = {
         "sql": "-sql",
         "crs": "-t_srs",
         "clip": "-clipdst",
         "newlayername": "-nln",
+        "append": "-append",
     }
 
     for c in config:
         if c in flagMap:
             if c != "clip":
-                opts.extend([flagMap[c], config[c]])
+                if c != "append":
+                    opts.extend([flagMap[c], config[c]])
+                else:
+                    opts.extend([flagMap[c]])
             else:
                 opts.extend([flagMap[c],
                     config[c]["southwest"][0], config[c]["southwest"][1],
@@ -36,17 +40,20 @@ def buildOpts(config):
 
     return opts
 
-def cleanup(config):
+def cleanup(path):
     try:
-        remove(config["destination"])
+        remove(path)
     except OSError:
         pass
 
+def sourceImport(config):
+    opts = buildOpts(config)
+    ogr2ogr.main(opts)
+
 def main():
+    cleanup(configs.temp_path)
     for config in configs.configList:
-        cleanup(config)
-        opts = buildOpts(config)
-        ogr2ogr.main(opts)
+        sourceImport(config)
 
 if __name__ == "__main__":
     main()

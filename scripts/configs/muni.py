@@ -6,7 +6,6 @@
 muni_all = {
     "crs": "crs:84",
     "source": "../source-data/trails_shp",
-    "destination": "../temp-data/temp.sqlite",
     "sql": '''
         SELECT 'Muni' AS source,
             SYSTEM_NAM AS system,
