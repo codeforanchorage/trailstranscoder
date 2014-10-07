@@ -11,10 +11,10 @@ from os import remove
 import ogr2ogr
 import configs
 
-def buildOpts(config):
+def buildOpts(config, outFormat, outPath):
     # Note: main is expecting sys.argv, where the first argument is the script name
     # so, the argument indices in the array need to be offset by 1
-    opts = ["", "-f", "SQLite", configs.temp_path]
+    opts = ["", "-f", outFormat, outPath]
 
     flagMap = {
         "sql": "-sql",
@@ -47,13 +47,28 @@ def cleanup(path):
         pass
 
 def sourceImport(config):
-    opts = buildOpts(config)
+    opts = buildOpts(config, "SQLite", configs.temp_path)
+    ogr2ogr.main(opts)
+
+def mergeTrails(path):
+    pass
+
+def generateJSON(path):
+    outpath = configs.output_path + "/all.geojson"
+    cleanup(outpath)
+    config = {
+        "crs": "crs:84",
+        "source": configs.temp_path,
+    }
+    opts = buildOpts(config, "GeoJSON", outpath)
     ogr2ogr.main(opts)
 
 def main():
     cleanup(configs.temp_path)
     for config in configs.configList:
         sourceImport(config)
+    mergeTrails(configs.temp_path)
+    generateJSON(configs.temp_path)
 
 if __name__ == "__main__":
     main()

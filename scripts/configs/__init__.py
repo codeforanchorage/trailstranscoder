@@ -2,6 +2,7 @@
 """
 
 temp_path = "../temp-data/temp.sqlite"
+output_path = "../output"
 
 from .muni import muni_all
 from .suppressions import suppression
