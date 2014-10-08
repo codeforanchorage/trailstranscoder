@@ -6,7 +6,7 @@ import collections
 # basic muni config
 
 muni_all = collections.OrderedDict()
-muni_all["crs"] = "crs:84"
+muni_all["tsrs"] = "crs:84"
 muni_all["source"] = "../source-data/trails_shp"
 muni_all["sql"] = '''
     SELECT 'Muni' AS source,

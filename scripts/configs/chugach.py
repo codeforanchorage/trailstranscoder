@@ -7,7 +7,7 @@ import collections
 
 chugach_all = collections.OrderedDict()
 chugach_all["append"] = None
-chugach_all["crs"] = "crs:84"
+chugach_all["tsrs"] = "crs:84"
 chugach_all["source"] = "../source-data/chugachstatepark.kmz"
 chugach_all["sql"] = '''
     SELECT 'DNR' AS source,
