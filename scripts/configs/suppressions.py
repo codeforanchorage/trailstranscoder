@@ -1,10 +1,10 @@
 """Define your configuration below
 """
 
+import collections
 # suppression config
 
-suppression = {
-    "append": None,
-    "source": "edits/suppressions.csv",
-}
+suppression = collections.OrderedDict()
+suppression["append"] = None
+suppression["source"] = "edits/suppressions.csv"
 

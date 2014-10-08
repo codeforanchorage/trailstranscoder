@@ -6,15 +6,15 @@ add the config to scripts/configs/__init__.py, then run this file.
 
 # Global imports
 from os import remove
+from subprocess import call
 
 # Local imports
-import ogr2ogr
 import configs
 
 def buildOpts(config, outFormat, outPath):
     # Note: main is expecting sys.argv, where the first argument is the script name
     # so, the argument indices in the array need to be offset by 1
-    opts = ["", "-f", outFormat, outPath]
+    opts = ["ogr2ogr", "-f", outFormat, outPath]
 
     flagMap = {
         "sql": "-sql",
@@ -22,12 +22,13 @@ def buildOpts(config, outFormat, outPath):
         "clip": "-clipdst",
         "newlayername": "-nln",
         "append": "-append",
+        "update": "-update",
     }
 
     for c in config:
         if c in flagMap:
             if c != "clip":
-                if c != "append":
+                if c not in ["append", "update"]:
                     opts.extend([flagMap[c], config[c]])
                 else:
                     opts.extend([flagMap[c]])
@@ -48,20 +49,23 @@ def cleanup(path):
 
 def sourceImport(config):
     opts = buildOpts(config, "SQLite", configs.temp_path)
-    ogr2ogr.main(opts)
+    call(opts)
 
 def mergeTrails(path):
     pass
 
 def generateJSON(path):
-    outpath = configs.output_path + "/all.geojson"
-    cleanup(outpath)
-    config = {
-        "crs": "crs:84",
-        "source": configs.temp_path,
-    }
-    opts = buildOpts(config, "GeoJSON", outpath)
-    ogr2ogr.main(opts)
+    # Todo: revisit once merging is done (geojson doesn't support exporting
+    # multiple layers
+    # outpath = configs.output_path + "/all.geojson"
+    # cleanup(outpath)
+    # config = {
+    #     "crs": "crs:84",
+    #     "source": configs.temp_path,
+    # }
+    # opts = buildOpts(config, "GeoJSON", outpath)
+    # call(opts)
+    pass
 
 def main():
     cleanup(configs.temp_path)
