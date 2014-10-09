@@ -21,4 +21,5 @@ muni_all["sql"] = '''
     FROM trails
     '''
 muni_all["newlayername"] = "muni_trails"
+muni_all["type"] = "MULTILINESTRING"
 

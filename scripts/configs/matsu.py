@@ -22,4 +22,5 @@ matsu_all["sql"] = '''
     FROM MSB_Trails_Legal_Aug2014
     '''
 matsu_all["newlayername"] = "matsu_trails"
+matsu_all["type"] = "MULTILINESTRING"
 

@@ -26,6 +26,7 @@ def buildOpts(config, outFormat, outPath):
         "newlayername": "-nln",
         "append": "-append",
         "update": "-update",
+        "type": "-nlt",
     }
 
     for c in config:

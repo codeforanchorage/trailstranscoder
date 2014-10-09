@@ -22,4 +22,5 @@ hatcher_all["sql"] = '''
     FROM trails
     '''
 hatcher_all["newlayername"] = "hatcher_pass_trails"
+hatcher_all["type"] = "MULTILINESTRING"
 

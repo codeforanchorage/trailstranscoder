@@ -22,4 +22,5 @@ chugach_all["sql"] = '''
     FROM trails
     '''
 chugach_all["newlayername"] = "chugach_trails"
+chugach_all["type"] = "MULTILINESTRING"
 
