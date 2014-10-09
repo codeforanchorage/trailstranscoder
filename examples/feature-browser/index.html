@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title></title>
+
+
+    <link rel="stylesheet" href="css/leaflet.css" />
+    <link rel="stylesheet" href="css/app.css" />
+
+
+    <style type="text/css">
+      #map-search {
+        position:absolute;
+        top:70px;
+        width:20%;
+        xheight:20%;
+        border:1px solid silver;
+        opacity:0.9;
+        left:10px;
+        background-color:white;
+        z-index:9999;
+        border-radius:4px;
+        box-shadow: rgba(0, 0, 0, 0.65098) 0px 1px 5px 0px;
+        overflow:scroll;
+        xdisplay:none;
+        padding:10px;
+      }
+    </style>
+
+
+    <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="js/leaflet.js"></script>
+
+    
+
+  </head>
+  <body>
+
+    <div id="map-sources">
+ 
+    </div>
+
+    <div id="map-search">
+ 
+    </div>    
+
+    <div id="map-canvas">
+
+    </div>
+
+    <script type="text/javascript">
+      var map = null;
+      var current = null;
+      var current_filter = null;
+
+      $(function() {
+          map = L.map("map-canvas").setView(L.latLng(61.15368, -150.05472), 13);
+
+          L.tileLayer('https://{s}.tiles.mapbox.com/v3/{id}/{z}/{x}/{y}.png', {
+              maxZoom:18,
+              id: 'examples.map-20v6611k'
+          }).addTo(map);
+
+          clearMap();
+          loadGeoJson("data/all.geojson");
+          
+      });
+
+      function loadGeoJson(url) 
+      {
+          $.get(url, null, function(obj) {
+            current = obj;
+            drawGeoJson();
+            drawSearchArea();
+          }, "json");
+      }
+
+      function drawGeoJson() 
+      {
+        if(current != null)
+        {
+          current_filter = {};
+          for (var i = 0; i < current.features.length; i++) 
+          {
+              var feature = current.features[i];
+
+              //fill the empty_feature with a superset of fields (for filtering later)
+              for(var key in feature.properties)
+              {
+                if(feature.properties.hasOwnProperty(key))
+                {
+                  current_filter[key] = null;
+                }
+              }
+
+              var geom = feature.geometry;
+
+              if(geom != null)
+              {
+                var points = [];
+
+                //assume we are working with all LineStrings here
+                for (var j = 0; j < geom.coordinates.length; j++) 
+                {
+                    var ll = L.latLng(geom.coordinates[j][1],geom.coordinates[j][0]);
+                    points.push(ll);
+                }
+
+                var opts = {opacity:1};
+                var polyline = L.polyline(points, opts).addTo(map);
+                polyline.bindPopup(popupHtml(feature));
+                //store a reference to the polyline with the feature
+                //this is so that we can do a quick search later
+                feature.polyline = polyline;
+              }
+              
+          }
+        }
+        
+      }
+
+      function drawSearchArea()
+      {
+        var html = "<div>Search within Map</div>";
+
+        html += "<table>";
+        for(var key in current_filter)
+        {
+          if(current_filter.hasOwnProperty(key))
+          {
+            html += "<tr><td><b>" + key + "</b></td><td><input type='text' class='filter-field' onkeyup='filter();' id='" + key + "'/></td></tr>"
+          }
+        }
+        html += "</table>";
+
+        document.getElementById("map-search").innerHTML = html;
+      }
+
+      function filter()
+      {
+        //gather the fields to filter by
+        for(var key in current_filter)
+        {   
+          if(current_filter.hasOwnProperty(key))
+          {
+            current_filter[key] = document.getElementById(key).value;
+          }
+        }
+
+        for (var i = 0; i < current.features.length; i++) 
+        {
+          if(current.features[i].polyline && current.features[i].polyline != null)
+          {
+            if(matchesCurrentFilter(current.features[i]))
+              current.features[i].polyline.setStyle({opacity:1});
+            else
+              current.features[i].polyline.setStyle({opacity:0});
+          }
+          
+        }
+      }
+
+      function matchesCurrentFilter(feature)
+      {
+        if(current_filter == null)
+          return true;
+        else
+        {
+          for(var key in current_filter)
+          {   
+            if(current_filter.hasOwnProperty(key))
+            {
+              if(current_filter[key] != null && current_filter[key] != "")
+              {
+                if(!feature.properties[key]) //if key is in the filter and not in the feature, no match
+                  return false;
+                else if(feature.properties[key] == null) //if key is null in the feature, no match
+                  return false;
+                else if(feature.properties[key].toString().toLowerCase().search(current_filter[key].toString().toLowerCase()) < 0) //if present in both but text doesn't match, no match
+                  return false;
+              }
+            }
+          }
+          //if we fell through, return true
+          return true;
+        }
+      }
+
+      function clearMap() 
+      {
+        for(i in map._layers) {
+            if(map._layers[i]._path != undefined) {
+                map.removeLayer(map._layers[i]);
+            }
+        }
+      }
+
+      function popupHtml(feature)
+      {
+        var html = "<table>";
+        if(feature.properties)
+        {
+          for(var key in feature.properties)
+          {
+              if(feature.properties.hasOwnProperty(key))
+              {
+                  html += "<tr><td>" + key + "</td><td><b>" + (feature.properties[key] || "") + "</b></td></tr>";
+              }
+          }
+        }
+        html += "</table>";
+        return html;
+      }
+
+
+    </script>
+  </body>
+</html>
