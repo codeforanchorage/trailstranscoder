@@ -17,9 +17,16 @@ is to prepare a standardized dataset for the specific purpose of unifying trail
 data. There is no automatic attribute discovery, the burden of understanding
 the upstream data falls upon the user.
 
+Requirements
+------------
+
+- GDAL >= 1.11.0
+- Python >= 2.7.0
+
 Getting Started
 ---------------
 
+    pip install -r requirements.txt
     cd scripts
     python main.py
 
