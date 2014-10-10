@@ -2,6 +2,8 @@
 
 Drop your data in source-data (unpacked), define a new config in scripts/configs,
 add the config to scripts/configs/__init__.py, then run this file.
+
+Authors: Code for Anchorage Brigade
 """
 
 # Global imports
@@ -15,10 +17,8 @@ import collections
 import configs
 
 def buildOpts(config, outFormat, outPath):
-    # Note: main is expecting sys.argv, where the first argument is the script name
-    # so, the argument indices in the array need to be offset by 1
+    """Generates a call to ogr2ogr"""
     opts = ["ogr2ogr", "-f", outFormat, outPath]
-
     flagMap = {
         "sql": "-sql",
         "tsrs": "-t_srs",
@@ -29,7 +29,6 @@ def buildOpts(config, outFormat, outPath):
         "update": "-update",
         "type": "-nlt",
     }
-
     for c in config:
         if c in flagMap:
             if c != "clip":
@@ -43,26 +42,30 @@ def buildOpts(config, outFormat, outPath):
                     config[c]["northeast"][0], config[c]["northeast"][1]])
         else:
             opts.append(config[c])
-
     return opts
 
 def cleanup_file(path):
+    """Removes a file from the filesystem"""
     try:
         remove(path)
     except OSError:
         pass
 
 def cleanup_path(path):
+    """Removes a directory from the filesystem"""
     try:
         rmtree(path)
     except OSError:
         pass
 
 def sourceImport(config):
+    """Initial pass for getting data out of upstream format and into something
+        that is a bit easier to work with"""
     opts = buildOpts(config, "SQLite", configs.temp_path)
     call(opts)
 
 def mergeTrails(path, tablenames):
+    """Merges all of the disparate sources into one table"""
     conn = sqlite3.connect(configs.temp_path)
     c = conn.cursor()
     # Create table to merge into
@@ -72,6 +75,7 @@ def mergeTrails(path, tablenames):
             identifier VARCHAR, surface VARCHAR, class VARCHAR, lighting VARCHAR,
             difficulty VARCHAR, skitype VARCHAR);
         """)
+    # Loop over the tables, stuff everything into merged_trails
     for tn in tablenames:
         c.execute("""
             INSERT INTO merged_trails (
@@ -92,6 +96,8 @@ def mergeTrails(path, tablenames):
     conn.close()
 
 def generateJSON(path):
+    """This could be smarter, but right now the idea is to loop over all of the
+        merged_trails, and dump a structured set of GeoJSON files to disk"""
     outpath = configs.output_path + "/all.geojson"
     cleanup_file(outpath)
     # All
@@ -153,7 +159,7 @@ def generateJSON(path):
     conn.close()
 
 def escape_ogr(s):
-    # We need to escape single quotes for OGR SQLite calls
+    """We need to escape single quotes for OGR SQLite calls"""
     escape = set ("'")
     if s:
         ret = "".join(char * 2 if char in escape else char for char in s)
@@ -162,6 +168,7 @@ def escape_ogr(s):
     return ret
 
 def main():
+    """Main workflow"""
     cleanup_file(configs.temp_path)
     tables = []
     for config in configs.configList:
