@@ -5,7 +5,8 @@ add the config to scripts/configs/__init__.py, then run this file.
 """
 
 # Global imports
-from os import remove
+from os import remove, makedirs
+from shutil import rmtree
 from subprocess import call
 import sqlite3
 import collections
@@ -45,9 +46,15 @@ def buildOpts(config, outFormat, outPath):
 
     return opts
 
-def cleanup(path):
+def cleanup_file(path):
     try:
         remove(path)
+    except OSError:
+        pass
+
+def cleanup_path(path):
+    try:
+        rmtree(path)
     except OSError:
         pass
 
@@ -79,14 +86,15 @@ def mergeTrails(path, tablenames):
                 AND t.system = s.system
                 AND (t.name = s.name OR s.name = '*')
                 AND suppressed = 'true'
-            WHERE s.suppressed IS NULL
+            WHERE s.suppressed IS NULL;
         """.format(tn,))
     conn.commit()
     conn.close()
 
 def generateJSON(path):
     outpath = configs.output_path + "/all.geojson"
-    cleanup(outpath)
+    cleanup_file(outpath)
+    # All
     config = collections.OrderedDict()
     config["tsrs"] = "crs:84"
     config["ssrs"] = "crs:84"
@@ -94,9 +102,67 @@ def generateJSON(path):
     config["sql"] = "SELECT * FROM merged_trails;"
     opts = buildOpts(config, "GeoJSON", outpath)
     call(opts)
+    # Sources
+    conn = sqlite3.connect(configs.temp_path)
+    c1 = conn.cursor()
+    for source in c1.execute("SELECT DISTINCT source FROM merged_trails;"):
+        config["sql"] = "SELECT * FROM merged_trails WHERE source='{0}'".format(source[0])
+        outpath = "".join([configs.output_path, "/", source[0].lower()])
+        cleanup_path(outpath)
+        makedirs(outpath)
+        opts = buildOpts(config, "GeoJSON", outpath + "/all.geojson")
+        call(opts)
+        # Sources + Systems
+        c2 = conn.cursor()
+        q2 = """SELECT DISTINCT system
+                FROM merged_trails
+                WHERE source='{0}';""".format(source[0])
+        for system in c2.execute(q2):
+            config["sql"] = """SELECT *
+                               FROM merged_trails
+                               WHERE source='{0}'
+                               AND system='{1}';""".format(source[0], system[0])
+            if not system[0]:
+                s = 'none'
+            else:
+                s = system[0].replace(' ', '_').lower()
+            outpath = "".join([configs.output_path, "/", source[0].lower(), "/", s])
+            makedirs(outpath)
+            opts = buildOpts(config, "GeoJSON", outpath + "/all.geojson")
+            call(opts)
+            # Sources + Systems + Names
+            c3 = conn.cursor()
+            q3 = """SELECT DISTINCT name
+                    FROM merged_trails
+                    WHERE source='{0}'
+                    AND system='{1}';""".format(source[0], system[0])
+            for name in c3.execute(q3):
+                config["sql"] = """SELECT *
+                                   FROM merged_trails
+                                   WHERE source='{0}'
+                                   AND system='{1}'
+                                   AND name='{2}';""".format(source[0], system[0], escape_ogr(name[0]))
+                if not name[0]:
+                    name = 'none'
+                else:
+                    name = name[0].replace(' ', '_').lower()
+                outpath = "".join([configs.output_path, "/", source[0].lower(),
+                    "/", s, "/", name, ".geojson"])
+                opts = buildOpts(config, "GeoJSON", outpath)
+                call(opts)
+    conn.close()
+
+def escape_ogr(s):
+    # We need to escape single quotes for OGR SQLite calls
+    escape = set ("'")
+    if s:
+        ret = "".join(char * 2 if char in escape else char for char in s)
+    else:
+        ret = ""
+    return ret
 
 def main():
-    cleanup(configs.temp_path)
+    cleanup_file(configs.temp_path)
     tables = []
     for config in configs.configList:
         tables.append(config["newlayername"])
