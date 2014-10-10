@@ -66,8 +66,9 @@
           }).addTo(map);
 
           clearMap();
-          loadGeoJson("data/all.geojson");
-          
+
+          loadGeoJson("output/muni/kincaid_ski_trails/all.geojson");
+          //loadGeoJson("https://s3.amazonaws.com/aktrails/1/muni/kincaid_ski_trails/all.geojson");
       });
 
       function loadGeoJson(url) 
@@ -113,12 +114,27 @@
               {
                 var points = [];
 
-                //assume we are working with all LineStrings here
-                for (var j = 0; j < geom.coordinates.length; j++) 
+                //we could be working with LineStrings or MultiLineStrings here
+                if(geom.type == "LineString")
                 {
-                    var ll = L.latLng(geom.coordinates[j][1],geom.coordinates[j][0]);
-                    points.push(ll);
-                }
+                  for (var j = 0; j < geom.coordinates.length; j++) 
+                  {
+                      var ll = L.latLng(geom.coordinates[j][1],geom.coordinates[j][0]);
+                      points.push(ll);
+                  }                  
+                } 
+                else if(geom.type == "MultiLineString")
+                {
+                  for (var j = 0; j < geom.coordinates.length; j++) 
+                  {
+                    for(var k = 0; k < geom.coordinates[j].length; k++)
+                    {
+                      var ll = L.latLng(geom.coordinates[j][k][1],geom.coordinates[j][k][0]);
+                      points.push(ll);
+                    }
+                  }                  
+                } 
+
 
                 var opts = {opacity:1};
                 var polyline = L.polyline(points, opts).addTo(map);
