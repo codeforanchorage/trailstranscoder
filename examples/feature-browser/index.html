@@ -44,6 +44,26 @@
     </div>
 
     <div id="map-search">
+      <div>
+        <div><b>Muni</b></div>
+        <div>
+          <a href="javascript:clearAndLoad('output/muni/all.geojson');">All</a> |
+          <a href="javascript:clearAndLoad('output/muni/kincaid_ski_trails/all.geojson');">Kincaid Ski</a> |
+          <a href="javascript:clearAndLoad('output/muni/hillside_ski_trails/all.geojson');">Hillside Ski</a>
+        </div>
+        <div><b>DNR</b></div>
+        <div>
+          <a href="javascript:clearAndLoad('output/dnr/all.geojson');">All</a> |
+          <a href="javascript:clearAndLoad('output/dnr/chugach_state_park/all.geojson');">Chugach</a> |
+          <a href="javascript:clearAndLoad('output/dnr/hatcher_pass/all.geojson');">Hatcher Pass</a>
+        </div>
+        <div><b>Mat-Su</b></div>
+        <div>
+          <a href="javascript:clearAndLoad('output/matsu/all.geojson');">All</a>
+        </div>
+        
+      </div>
+      <hr>
       <div id="map-filter"></div>
       <div id="map-feature-count"></div>
     </div>    
@@ -58,25 +78,32 @@
       var current_filter = null;
 
       $(function() {
-          map = L.map("map-canvas").setView(L.latLng(61.15368, -150.05472), 13);
+          map = L.map("map-canvas").setView(L.latLng(61.15368, -150.05472), 10);
 
           L.tileLayer('https://{s}.tiles.mapbox.com/v3/{id}/{z}/{x}/{y}.png', {
               maxZoom:18,
               id: 'examples.map-20v6611k'
           }).addTo(map);
 
-          clearMap();
+          //clearMap();
 
-          loadGeoJson("output/muni/kincaid_ski_trails/all.geojson");
+          //loadGeoJson("output/muni/kincaid_ski_trails/all.geojson");
+          //loadGeoJson("output/muni/all.geojson");
           //loadGeoJson("https://s3.amazonaws.com/aktrails/1/muni/kincaid_ski_trails/all.geojson");
       });
+
+      function clearAndLoad(url)
+      {
+        clearMap();
+        loadGeoJson(url);
+      }
 
       function loadGeoJson(url) 
       {
           $.get(url, null, function(obj) {
             current = obj;
             drawGeoJson();
-            drawSearchArea();
+            updateSearchArea();
           }, "json");
       }
 
@@ -149,7 +176,7 @@
         
       }
 
-      function drawSearchArea()
+      function updateSearchArea()
       {
         var html = "<div>Search within Map</div>";
 
