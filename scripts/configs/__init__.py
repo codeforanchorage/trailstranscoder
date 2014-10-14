@@ -2,6 +2,8 @@
 """
 
 temp_path = "../temp-data/temp.sqlite"
+migrations_path = "sql/migrations"
+cleanup_path = "sql/cleanup"
 output_path = "../output"
 
 from .muni import muni_all
@@ -15,6 +17,5 @@ configList = (
     chugach_all,
     hatcher_all,
     matsu_all,
-    suppression,
     )
 

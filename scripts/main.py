@@ -7,7 +7,7 @@ Authors: Code for Anchorage Brigade
 """
 
 # Global imports
-from os import remove, makedirs
+from os import remove, makedirs, listdir
 from shutil import rmtree
 from subprocess import call
 import sqlite3
@@ -44,14 +44,14 @@ def buildOpts(config, outFormat, outPath):
             opts.append(config[c])
     return opts
 
-def cleanup_file(path):
+def remove_file(path):
     """Removes a file from the filesystem"""
     try:
         remove(path)
     except OSError:
         pass
 
-def cleanup_path(path):
+def remove_path(path):
     """Removes a directory from the filesystem"""
     try:
         rmtree(path)
@@ -64,130 +64,35 @@ def sourceImport(config):
     opts = buildOpts(config, "SQLite", configs.temp_path)
     call(opts)
 
-def mergeTrails(path, tablenames):
-    """Merges all of the disparate sources into one table"""
+def migrate():
+    """Migrate the SQLite DB"""
     conn = sqlite3.connect(configs.temp_path)
     c = conn.cursor()
-    # Create table to merge into
-    c.execute("""
-        CREATE TABLE merged_trails(OGC_FID INTEGER PRIMARY KEY ASC,
-            GEOMETRY BLOB, source VARCHAR, system VARCHAR, name VARCHAR,
-            identifier VARCHAR, surface VARCHAR, class VARCHAR, lighting VARCHAR,
-            difficulty VARCHAR, skitype VARCHAR);
-        """)
-    # Loop over the tables, stuff everything into merged_trails
-    for tn in tablenames:
-        c.execute("""
-            INSERT INTO merged_trails (
-                GEOMETRY, source, system, name, identifier, surface, class,
-                lighting, difficulty, skitype
-                )
-            SELECT t.GEOMETRY, t.source, t.system, t.name, t.identifier, t.surface,
-                t.class, t.lighting, t.difficulty, t.skitype
-            FROM {0} t
-            LEFT OUTER JOIN suppressions s
-                ON t.source = s.source
-                AND t.system = s.system
-                AND (t.name = s.name OR s.name = '*')
-                AND suppressed = 'true'
-            WHERE s.suppressed IS NULL;
-        """.format(tn,))
-    conn.commit()
+    migrations = listdir(configs.migrations_path)
+    for migration in migrations:
+        f = open("/".join([configs.migrations_path, migration]), 'r')
+        sql = f.read()
+        c.executescript(sql)
+        conn.commit()
     conn.close()
 
-def cleanTrails():
-    """Applies some general cleanup to the merged trails table"""
+def clean():
+    """Run the cleanup protocols"""
     conn = sqlite3.connect(configs.temp_path)
     c = conn.cursor()
-    # Create usage flags table
-    c.execute("CREATE TABLE usage_flags (flag INTEGER PRIMARY KEY ASC, name VARCHAR);")
-    # Insert some defaults into usage_flags
-    usage_flags = [(1, 'Foot'), (2, 'Bike'), (4, 'Ski'), (8, 'Snowshoe'),
-            (16, 'Skijor'), (32, 'Mush'), (64, 'Dog Walk'), (128, 'Off-leash Dog')]
-    c.executemany("INSERT INTO usage_flags VALUES (?, ?)", usage_flags)
-    conn.commit()
-    # Create cleaned trails table
-    c.execute("""
-        CREATE TABLE cleaned_trails (
-            OGC_FID INTEGER PRIMARY KEY ASC,
-            GEOMETRY BLOB,
-            source VARCHAR,
-            system VARCHAR,
-            name VARCHAR,
-            surface VARCHAR,
-            lighting VARCHAR,
-            winter_usage INTEGER,
-            summer_usage INTEGER,
-            ski_difficulty VARCHAR,
-            ski_mode VARCHAR,
-            direction VARCHAR,
-            handicap_accessible VARCHAR);""")
-    # Create cleaned up view
-    c.execute("""
-        CREATE VIEW v_cleaned_trails AS
-            SELECT group_concat(f_summer.name) summer_usage_list, iq.*
-            FROM (
-                SELECT group_concat(f_winter.name) winter_usage_list, t.*
-                FROM cleaned_trails t
-                LEFT OUTER JOIN usage_flags f_winter
-                    ON t.winter_usage & f_winter.flag > 0
-                GROUP BY OGC_FID
-            ) iq
-            LEFT OUTER JOIN usage_flags f_summer
-                ON iq.summer_usage & f_summer.flag > 0
-            GROUP BY OGC_FID;""")
-    # Clean things up
-    c.execute("""
-        INSERT INTO cleaned_trails
-            SELECT
-                OGC_FID,
-                GEOMETRY,
-                source,
-                system,
-                name,
-                COALESCE(surface, 'Unknown'),
-                COALESCE(lighting, 'No'),
-                CASE
-                    WHEN system LIKE '%skijor%' THEN 16
-                    WHEN system LIKE '%ski%' AND NOT system LIKE '%skijor%' THEN 4
-                    WHEN system LIKE '%bike%' OR system LIKE '%single track%' THEN 2
-                    ELSE 1 | 2 | 64
-                END AS winter_usage,
-                CASE
-                    WHEN system LIKE '%bike%' OR system LIKE '%single track%' THEN 2
-                    ELSE 1 | 2 | 64
-                END AS summer_usage,
-                COALESCE(difficulty, 'Unknown'),
-                COALESCE(skitype, 'Both'),
-                '2way' AS direction,
-                CASE
-                    WHEN surface='Asphalt' THEN 'Yes' ELSE 'No'
-                END AS handicap_accessible
-            FROM merged_trails;""")
-    conn.commit()
-    c.execute("""
-        UPDATE cleaned_trails SET winter_usage = winter_usage | 4
-        WHERE system LIKE '%ski%' AND NOT system LIKE '%skijor%';""")
-    c.execute("""
-        UPDATE cleaned_trails SET winter_usage = winter_usage | 4
-        WHERE system LIKE '%campbell creek trail%';""")
-    c.execute("""
-        UPDATE cleaned_trails SET winter_usage = winter_usage | 4
-        WHERE system LIKE '%coastal trail%';""")
-    c.execute("""
-        UPDATE cleaned_trails SET winter_usage = winter_usage | 4
-        WHERE system LIKE '%chester creek trail%';""")
-    c.execute("""
-        UPDATE cleaned_trails SET ski_difficulty = NULL, ski_mode = null
-        WHERE winter_usage & 4 = 0;""")
-    conn.commit()
+    cleanups = listdir(configs.cleanup_path)
+    for cleanup in cleanups:
+        f = open("/".join([configs.cleanup_path, cleanup]), 'r')
+        sql = f.read()
+        c.executescript(sql)
+        conn.commit()
     conn.close()
 
 def generateJSON(path):
     """This could be smarter, but right now the idea is to loop over all of the
         v_cleaned_trails, and dump a structured set of GeoJSON files to disk"""
     outpath = configs.output_path + "/all.geojson"
-    cleanup_file(outpath)
+    remove_file(outpath)
     # All
     config = collections.OrderedDict()
     config["tsrs"] = "crs:84"
@@ -202,7 +107,7 @@ def generateJSON(path):
     for source in c1.execute("SELECT DISTINCT source FROM v_cleaned_trails;"):
         config["sql"] = "SELECT * FROM v_cleaned_trails WHERE source='{0}'".format(source[0])
         outpath = "".join([configs.output_path, "/", source[0].lower()])
-        cleanup_path(outpath)
+        remove_path(outpath)
         makedirs(outpath)
         opts = buildOpts(config, "GeoJSON", outpath + "/all.geojson")
         call(opts)
@@ -257,15 +162,16 @@ def escape_ogr(s):
 
 def main():
     """Main workflow"""
-    cleanup_file(configs.temp_path)
-    tables = []
+    remove_file(configs.temp_path)
+    # First import all source data into their own tables
     for config in configs.configList:
-        tables.append(config["newlayername"])
         sourceImport(config)
-    tables = tables[:-1] # We don't want to include the suppressions
-    mergeTrails(configs.temp_path, tables)
-    cleanTrails()
-    generateJSON(configs.temp_path)
+    # Then, apply our migrations
+    migrate()
+    # Then, apply our cleanup rules
+    clean()
+    # Lastly, generate output
+    # generateJSON(configs.temp_path)
 
 if __name__ == "__main__":
     main()
