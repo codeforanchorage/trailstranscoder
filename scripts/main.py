@@ -95,9 +95,63 @@ def mergeTrails(path, tablenames):
     conn.commit()
     conn.close()
 
+def cleanTrails():
+    """Applies some general cleanup to the merged trails table"""
+    conn = sqlite3.connect(configs.temp_path)
+    c = conn.cursor()
+    # Create usage flags table
+    c.execute("""CREATE TABLE usage_flags (flag INTEGER PRIMARY KEY ASC, name VARCHAR);""")
+    # Insert some defaults into usage_flags
+    usage_flags = [(1, 'Foot'), (2, 'Bike'), (4, 'Ski'), (8, 'Snowshoe'),
+            (16, 'Skijor'), (32, 'Mush'), (64, 'Dog Walk'), (128, 'Off-leash Dog')]
+    c.executemany("""INSERT INTO usage_flags VALUES (?, ?)""", usage_flags)
+    conn.commit()
+    # Create cleaned trails table
+    c.execute("""
+        CREATE TABLE cleaned_trails (OGC_FID INTEGER PRIMARY KEY ASC,
+            GEOMETRY BLOB,
+            source VARCHAR,
+            system VARCHAR,
+            name VARCHAR,
+            surface VARCHAR,
+            lighting VARCHAR,
+            winter_usage INTEGER,
+            summer_usage INTEGER,
+            ski_difficulty VARCHAR,
+            ski_mode VARCHAR,
+            direction VARCHAR,
+            handicap_accessible VARCHAR);""")
+    # Clean things up
+    c.execute("""
+        INSERT INTO cleaned_trails
+            SELECT
+                OGC_FID,
+                GEOMETRY,
+                source,
+                system,
+                name,
+                COALESCE(surface, 'Unknown'),
+                COALESCE(lighting, 'No'),
+                CASE
+                    WHEN system LIKE '%skijor%' THEN 16
+                    WHEN system LIKE '%ski%' THEN 4
+                    WHEN system LIKE '%bike%' OR system LIKE '%single track%' THEN 2
+                    ELSE 1 | 2 | 64
+                END AS winter_usage,
+                1 | 2 | 64 AS summer_usage,
+                COALESCE(difficulty, 'Unknown'),
+                COALESCE(skitype, 'Both'),
+                '2way' AS direction,
+                CASE
+                    WHEN surface='Asphalt' THEN 'Yes' ELSE 'No'
+                END AS handicap_accessible
+            FROM merged_trails;""")
+    conn.commit()
+    conn.close()
+
 def generateJSON(path):
     """This could be smarter, but right now the idea is to loop over all of the
-        merged_trails, and dump a structured set of GeoJSON files to disk"""
+        cleaned_trails, and dump a structured set of GeoJSON files to disk"""
     outpath = configs.output_path + "/all.geojson"
     cleanup_file(outpath)
     # All
@@ -105,14 +159,14 @@ def generateJSON(path):
     config["tsrs"] = "crs:84"
     config["ssrs"] = "crs:84"
     config["source"] = configs.temp_path
-    config["sql"] = "SELECT * FROM merged_trails;"
+    config["sql"] = "SELECT * FROM cleaned_trails;"
     opts = buildOpts(config, "GeoJSON", outpath)
     call(opts)
     # Sources
     conn = sqlite3.connect(configs.temp_path)
     c1 = conn.cursor()
-    for source in c1.execute("SELECT DISTINCT source FROM merged_trails;"):
-        config["sql"] = "SELECT * FROM merged_trails WHERE source='{0}'".format(source[0])
+    for source in c1.execute("SELECT DISTINCT source FROM cleaned_trails;"):
+        config["sql"] = "SELECT * FROM cleaned_trails WHERE source='{0}'".format(source[0])
         outpath = "".join([configs.output_path, "/", source[0].lower()])
         cleanup_path(outpath)
         makedirs(outpath)
@@ -121,11 +175,11 @@ def generateJSON(path):
         # Sources + Systems
         c2 = conn.cursor()
         q2 = """SELECT DISTINCT system
-                FROM merged_trails
+                FROM cleaned_trails
                 WHERE source='{0}';""".format(source[0])
         for system in c2.execute(q2):
             config["sql"] = """SELECT *
-                               FROM merged_trails
+                               FROM cleaned_trails
                                WHERE source='{0}'
                                AND system='{1}';""".format(source[0], system[0])
             if not system[0]:
@@ -139,12 +193,12 @@ def generateJSON(path):
             # Sources + Systems + Names
             c3 = conn.cursor()
             q3 = """SELECT DISTINCT name
-                    FROM merged_trails
+                    FROM cleaned_trails
                     WHERE source='{0}'
                     AND system='{1}';""".format(source[0], system[0])
             for name in c3.execute(q3):
                 config["sql"] = """SELECT *
-                                   FROM merged_trails
+                                   FROM cleaned_trails
                                    WHERE source='{0}'
                                    AND system='{1}'
                                    AND name='{2}';""".format(source[0], system[0], escape_ogr(name[0]))
@@ -176,6 +230,7 @@ def main():
         sourceImport(config)
     tables = tables[:-1] # We don't want to include the suppressions
     mergeTrails(configs.temp_path, tables)
+    cleanTrails()
     generateJSON(configs.temp_path)
 
 if __name__ == "__main__":
