@@ -1,7 +1,8 @@
 """A toolchain for transcoding and cleaning Alaska trail data.
 
 Drop your data in source-data (unpacked), define a new config in scripts/configs,
-add the config to scripts/configs/__init__.py, then run this file.
+add the config to scripts/configs/__init__.py, update sql/cleanup/00000_merge.sql,
+then run this file.
 
 Authors: Code for Anchorage Brigade
 """
@@ -64,29 +65,25 @@ def sourceImport(config):
     opts = buildOpts(config, "SQLite", configs.temp_path)
     call(opts)
 
-def migrate():
-    """Migrate the SQLite DB"""
+def runScripts(path):
+    """Helper for running SQL scripts on disk"""
     conn = sqlite3.connect(configs.temp_path)
     c = conn.cursor()
-    migrations = listdir(configs.migrations_path)
-    for migration in migrations:
-        f = open("/".join([configs.migrations_path, migration]), 'r')
+    scripts = listdir(path)
+    for script in scripts:
+        f = open("/".join([path, script]), "r")
         sql = f.read()
         c.executescript(sql)
         conn.commit()
     conn.close()
 
+def migrate():
+    """Migrate the SQLite DB"""
+    runScripts(configs.migrations_path)
+
 def clean():
     """Run the cleanup protocols"""
-    conn = sqlite3.connect(configs.temp_path)
-    c = conn.cursor()
-    cleanups = listdir(configs.cleanup_path)
-    for cleanup in cleanups:
-        f = open("/".join([configs.cleanup_path, cleanup]), 'r')
-        sql = f.read()
-        c.executescript(sql)
-        conn.commit()
-    conn.close()
+    runScripts(configs.cleanup_path)
 
 def generateJSON(path):
     """This could be smarter, but right now the idea is to loop over all of the
