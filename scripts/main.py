@@ -106,7 +106,7 @@ def generateJSON(path):
     c1 = conn.cursor()
     for source in c1.execute("SELECT DISTINCT source FROM v_cleaned_trails;"):
         config["sql"] = "SELECT * FROM v_cleaned_trails WHERE source='{0}'".format(source[0])
-        outpath = "".join([configs.output_path, "/", source[0].lower()])
+        outpath = "/".join([configs.output_path, source[0].lower()])
         remove_path(outpath)
         makedirs(outpath)
         opts = buildOpts(config, "GeoJSON", outpath + "/all.geojson")
@@ -125,7 +125,7 @@ def generateJSON(path):
                 s = 'none'
             else:
                 s = system[0].replace(' ', '_').lower()
-            outpath = "".join([configs.output_path, "/", source[0].lower(), "/", s])
+            outpath = "/".join([configs.output_path, source[0].lower(), s])
             makedirs(outpath)
             opts = buildOpts(config, "GeoJSON", outpath + "/all.geojson")
             call(opts)
@@ -145,8 +145,7 @@ def generateJSON(path):
                     name = 'none'
                 else:
                     name = name[0].replace(' ', '_').lower()
-                outpath = "".join([configs.output_path, "/", source[0].lower(),
-                    "/", s, "/", name, ".geojson"])
+                outpath = "/".join([configs.output_path, source[0].lower(), s, name+".geojson"])
                 opts = buildOpts(config, "GeoJSON", outpath)
                 call(opts)
     conn.close()
@@ -171,7 +170,7 @@ def main():
     # Then, apply our cleanup rules
     clean()
     # Lastly, generate output
-    # generateJSON(configs.temp_path)
+    generateJSON(configs.temp_path)
 
 if __name__ == "__main__":
     main()
