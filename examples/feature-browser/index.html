@@ -45,6 +45,7 @@
 
     <div id="map-search">
       <div>
+        <a href="javascript:clearAndLoad('output/clean.geojson');">Cleaned</a>
         <div><b>Muni</b></div>
         <div>
           <a href="javascript:clearAndLoad('output/muni/all.geojson');">All</a> |
@@ -195,10 +196,10 @@
       function filterField(fieldName,values)
       {
         if(!values || keys(values).length > 100)
-          return "<input type='text' class='filter-field' onchange='filter();' id='" + fieldName + "'/>";
+          return "<input type='text' class='filter-field' onchange='filter(false);' id='" + fieldName + "'/>";
         else
         {
-          var sel = "<select class='filter-field' onchange='filter();' id='" + fieldName + "'>";
+          var sel = "<select class='filter-field' onchange='filter(true);' id='" + fieldName + "'>";
           sel += "<option></option>";
           keys(values).forEach(function(val) {
             sel += "<option value='" + val + "'>" + val + " (" + values[val] + ")</value>";
@@ -222,7 +223,7 @@
         return k;
       }
 
-      function filter()
+      function filter(exact)
       {
         //gather the fields to filter by
         for(var key in current_filter)
@@ -238,7 +239,7 @@
         {
           if(current.features[i].polyline && current.features[i].polyline != null)
           {
-            if(matchesCurrentFilter(current.features[i]))
+            if(matchesCurrentFilter(current.features[i], exact))
             {
               current.features[i].polyline.setStyle({opacity:1});
               hits++;              
@@ -252,7 +253,7 @@
         document.getElementById("map-feature-count").innerHTML = "" + hits + " features";
       }
 
-      function matchesCurrentFilter(feature)
+      function matchesCurrentFilter(feature, exact)
       {
         if(current_filter == null)
           return true;
@@ -268,7 +269,9 @@
                   return false;
                 else if(feature.properties[key] == null) //if key is null in the feature, no match
                   return false;
-                else if(feature.properties[key].toString().toLowerCase().search(current_filter[key].toString().toLowerCase()) < 0) //if present in both but text doesn't match, no match
+                else if(exact && feature.properties[key].toString() != current_filter[key].toString())
+                  return false;
+                else if(!exact && feature.properties[key].toString().toLowerCase().search(current_filter[key].toString().toLowerCase()) < 0) //if present in both but text doesn't match, no match
                   return false;
               }
             }

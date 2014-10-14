@@ -1,3 +1,5 @@
+drop table if exists usage_flags;
+
 CREATE TABLE usage_flags
 	(
 		Flag INTEGER PRIMARY KEY,
@@ -23,6 +25,8 @@ insert into usage_flags (Flag, Name)
 	union
 	select 128, 'Off-Leash Dog';
 
+
+drop table if exists cleaned_trails;
 
 CREATE TABLE cleaned_trails (OGC_FID INTEGER PRIMARY KEY ASC,
             GEOMETRY BLOB, 
@@ -50,11 +54,14 @@ insert into cleaned_trails
 		coalesce(lighting, 'No'),
 		case 
 			when system like '%skijor%' then 16 
-			when system like '%ski%' then 4 
+			when system like '%ski%' and not system like '%skijor%' then 4 
 			when system like '%bike%' or system like '%single track%' then 2
 			else 1 | 2 | 64 end --default: foot/bike/dog
 			winter_usage,
-		1 | 2 | 64 summer_usage, --default: foot/bike/dog
+		case 
+			when system like '%bike%' or system like '%single track%' then 2 --bike only
+			else 1 | 2 | 64 end --default: foot/bike/dog
+			summer_usage, 
 		coalesce(difficulty, 'Unknown'),
 		coalesce(skitype, 'Both'),
 		'2way' direction,
@@ -63,8 +70,39 @@ insert into cleaned_trails
 
 -- here go the update statements
 
---update cleaned_trails set winter_usage = winter_usage | 4 where system like '%ski%'
+update cleaned_trails set winter_usage = winter_usage | 4 where system like '%ski%' and not system like '%skijor%';
+update cleaned_trails set winter_usage = winter_usage | 4 where system like '%campbell creek trail%';
+update cleaned_trails set winter_usage = winter_usage | 4 where system like '%coastal trail%';
+update cleaned_trails set winter_usage = winter_usage | 4 where system like '%chester creek trail%';
+	
+update cleaned_trails 
+	set ski_difficulty = null,
+	ski_mode = null
+	where winter_usage & 4 = 0;
+
+
+--
 --update cleaned_trails set winter_usage = winter_usage | 4 where system like '%ski%'
 
 --run ogr2ogr against this when finished
 --ogr2ogr -f GeoJSON  ./out.geojson ./temp.sqlite -sql "select * from cleaned_trails"
+
+--query to do some fancy joining to make the usage flags look nicer
+
+drop view if exists cleaned_trails_view;
+
+create view cleaned_trails_view
+as
+	select group_concat(f_summer.Name) summer_usage_list, iq.* 
+	from
+	(
+		select group_concat(f_winter.Name) winter_usage_list,
+		t.* 
+		from cleaned_trails t
+		left outer join usage_flags f_winter
+		on t.winter_usage & f_winter.Flag > 0
+		group by OGC_FID
+	) iq
+	left outer join usage_flags f_summer
+		on iq.summer_usage & f_summer.Flag > 0
+	group by OGC_FID;
