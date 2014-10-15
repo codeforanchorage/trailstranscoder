@@ -58,4 +58,16 @@ SELECT GEOMETRY,
     difficulty,
     skitype
 FROM hatcher_pass_trails
+UNION
+SELECT GEOMETRY,
+    source,
+    system,
+    name,
+    identifier,
+    surface,
+    class,
+    lighting,
+    difficulty,
+    skitype
+FROM kincaid_singletrack_trails
 
