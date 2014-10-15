@@ -12,7 +12,7 @@ kincaid_all["tsrs"] = "crs:84"
 kincaid_all["source"] = "../source-data/Kincaid_Singletrack"
 kincaid_all["sql"] = '''
     SELECT 'ACE' AS source,
-        'Kincaid Singletrack' AS system,
+        'Kincaid Single Track' AS system,
         name,
         'ACE/Kincaid Singletrack/' + name AS identifier,
         NULL AS surface,
