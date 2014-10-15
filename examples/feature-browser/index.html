@@ -152,7 +152,7 @@
                   }
                 }
 
-                var opts = {opacity:1};
+                var opts = {opacity:0.75, weight:2, color:'#'+Math.floor(Math.random()*16777215).toString(16)};
                 var polyline = L.polyline(points, opts).addTo(map);
                 polyline.bindPopup(popupHtml(feature));
                 //store a reference to the polyline with the feature
