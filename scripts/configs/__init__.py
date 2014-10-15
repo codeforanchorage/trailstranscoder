@@ -10,7 +10,6 @@ from .muni import muni_all
 from .chugach import chugach_all
 from .hatcher import hatcher_all
 from .matsu import matsu_all
-from .suppressions import suppression
 
 configList = (
     muni_all, # This config needs to come first
