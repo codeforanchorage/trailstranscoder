@@ -14,7 +14,7 @@ kincaid_all["sql"] = '''
     SELECT 'ACE' AS source,
         'Kincaid Single Track' AS system,
         name,
-        'ACE/Kincaid Singletrack/' + name AS identifier,
+        'ACE/Kincaid Single Track/' + name AS identifier,
         NULL AS surface,
         NULL AS class,
         NULL AS lighting,
