@@ -5,12 +5,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title></title>
-
-
     <link rel="stylesheet" href="css/leaflet.css" />
     <link rel="stylesheet" href="css/app.css" />
-
-
     <style type="text/css">
       #map-search {
         position:absolute;
@@ -30,19 +26,11 @@
       }
     </style>
 
-
     <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
     <script src="js/leaflet.js"></script>
-
-    
-
   </head>
   <body>
-
-    <div id="map-sources">
- 
-    </div>
-
+    <div id="map-sources"></div>
     <div id="map-search">
       <div>
         <a href="javascript:clearAndLoad('output/all.geojson');">All</a>
@@ -70,11 +58,9 @@
       <hr>
       <div id="map-filter"></div>
       <div id="map-feature-count"></div>
-    </div>    
-
-    <div id="map-canvas">
-
     </div>
+
+    <div id="map-canvas"></div>
 
     <script type="text/javascript">
       var map = null;
@@ -102,7 +88,7 @@
         loadGeoJson(url);
       }
 
-      function loadGeoJson(url) 
+      function loadGeoJson(url)
       {
           $.get(url, null, function(obj) {
             current = obj;
@@ -111,12 +97,12 @@
           }, "json");
       }
 
-      function drawGeoJson() 
+      function drawGeoJson()
       {
         if(current != null)
         {
           current_filter = {};
-          for (var i = 0; i < current.features.length; i++) 
+          for (var i = 0; i < current.features.length; i++)
           {
               var feature = current.features[i];
 
@@ -148,42 +134,38 @@
                 //we could be working with LineStrings or MultiLineStrings here
                 if(geom.type == "LineString")
                 {
-                  for (var j = 0; j < geom.coordinates.length; j++) 
+                  for (var j = 0; j < geom.coordinates.length; j++)
                   {
                       var ll = L.latLng(geom.coordinates[j][1],geom.coordinates[j][0]);
                       points.push(ll);
-                  }                  
-                } 
+                  }
+                }
                 else if(geom.type == "MultiLineString")
                 {
-                  for (var j = 0; j < geom.coordinates.length; j++) 
+                  for (var j = 0; j < geom.coordinates.length; j++)
                   {
                     for(var k = 0; k < geom.coordinates[j].length; k++)
                     {
                       var ll = L.latLng(geom.coordinates[j][k][1],geom.coordinates[j][k][0]);
                       points.push(ll);
                     }
-                  }                  
-                } 
+                  }
+                }
 
-
-                var opts = {opacity:1};
+                var opts = {opacity:0.75, weight:2, color:'#'+Math.floor(Math.random()*16777215).toString(16)};
                 var polyline = L.polyline(points, opts).addTo(map);
                 polyline.bindPopup(popupHtml(feature));
                 //store a reference to the polyline with the feature
                 //this is so that we can do a quick search later
                 feature.polyline = polyline;
               }
-              
           }
         }
-        
       }
 
       function updateSearchArea()
       {
         var html = "<div>Search within Map</div>";
-
         html += "<table>";
 
         keys(current_filter).forEach(function(k) {
@@ -208,7 +190,7 @@
             sel += "<option value='" + val + "'>" + val + " (" + values[val] + ")</value>";
           });
 
-          sel += "</select>"; 
+          sel += "</select>";
           return sel;
         }
       }
@@ -230,7 +212,7 @@
       {
         //gather the fields to filter by
         for(var key in current_filter)
-        {   
+        {
           if(current_filter.hasOwnProperty(key))
           {
             current_filter[key] = document.getElementById(key).value;
@@ -238,19 +220,18 @@
         }
 
         var hits = 0;
-        for (var i = 0; i < current.features.length; i++) 
+        for (var i = 0; i < current.features.length; i++)
         {
           if(current.features[i].polyline && current.features[i].polyline != null)
           {
             if(matchesCurrentFilter(current.features[i], exact))
             {
               current.features[i].polyline.setStyle({opacity:1});
-              hits++;              
+              hits++;
             }
             else
               current.features[i].polyline.setStyle({opacity:0});
           }
-          
         }
 
         document.getElementById("map-feature-count").innerHTML = "" + hits + " features";
@@ -263,7 +244,7 @@
         else
         {
           for(var key in current_filter)
-          {   
+          {
             if(current_filter.hasOwnProperty(key))
             {
               if(current_filter[key] != null && current_filter[key] != "")
@@ -274,7 +255,8 @@
                   return false;
                 else if(exact && feature.properties[key].toString() != current_filter[key].toString())
                   return false;
-                else if(!exact && feature.properties[key].toString().toLowerCase().search(current_filter[key].toString().toLowerCase()) < 0) //if present in both but text doesn't match, no match
+                else if(!exact && feature.properties[key].toString().toLowerCase().search(current_filter[key].toString().toLowerCase()) < 0)
+                //if present in both but text doesnt match, no match
                   return false;
               }
             }
@@ -284,7 +266,7 @@
         }
       }
 
-      function clearMap() 
+      function clearMap()
       {
         for(i in map._layers) {
             if(map._layers[i]._path != undefined) {
@@ -310,7 +292,6 @@
         html += "<div><textarea style='width:100%;height:100px;'>" + JSON.stringify(feature, null, 4) + "</textarea></div>";
         return html;
       }
-
 
     </script>
   </body>
