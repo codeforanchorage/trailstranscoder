@@ -3,6 +3,8 @@ trailstranscoder
 
 A toolchain for transcoding and cleaning Alaska trail data.
 
+![technicolor_trails](https://cloud.githubusercontent.com/assets/274668/4655646/06c11ec2-54c7-11e4-96ec-f7b6fe6478b7.png)
+
 Motivation
 ----------
 
