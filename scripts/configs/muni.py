@@ -17,7 +17,9 @@ muni_all["sql"] = '''
         TRAIL_CLAS AS class,
         LIGHTING AS lighting,
         GRADE AS difficulty,
-        SKI_TYPE AS skiType
+        SKI_TYPE AS skiType,
+        NULL AS comments,
+        NULL AS image_url
     FROM trails
     '''
 muni_all["newlayername"] = "muni_trails"

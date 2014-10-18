@@ -18,7 +18,9 @@ matsu_all["sql"] = '''
         NULL AS class,
         NULL AS lighting,
         NULL AS difficulty,
-        NULL AS skiType
+        NULL AS skiType,
+        NULL AS comments,
+        NULL AS image_url
     FROM MSB_Trails_Legal_Aug2014
     '''
 matsu_all["newlayername"] = "matsu_trails"

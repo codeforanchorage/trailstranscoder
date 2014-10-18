@@ -19,7 +19,9 @@ kincaid_all["sql"] = '''
         NULL AS class,
         NULL AS lighting,
         NULL AS difficulty,
-        NULL AS skiType
+        NULL AS skiType,
+        NULL AS comments,
+        NULL AS image_url
     FROM Kincaid_Single_Track_North_Section_2013
     '''
 kincaid_all["newlayername"] = "kincaid_singletrack_trails"

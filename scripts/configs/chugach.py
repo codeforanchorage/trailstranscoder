@@ -18,7 +18,9 @@ chugach_all["sql"] = '''
         NULL AS class,
         NULL AS lighting,
         NULL AS difficulty,
-        NULL AS skiType
+        NULL AS skiType,
+        NULL AS comments,
+        NULL AS image_url
     FROM trails
     '''
 chugach_all["newlayername"] = "chugach_trails"
