@@ -24,7 +24,9 @@ INSERT INTO cleaned_trails
         '2way' AS direction,
         CASE
             WHEN surface='Asphalt' THEN 'Yes' ELSE 'No'
-        END AS handicap_accessible
+        END AS handicap_accessible,
+        NULL AS comments,
+        NULL AS image_url
     FROM merged_trails;
 
 -- Some tweaks

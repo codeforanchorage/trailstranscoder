@@ -11,5 +11,7 @@ CREATE TABLE merged_trails (
     class VARCHAR,
     lighting VARCHAR,
     difficulty VARCHAR,
-    skitype VARCHAR);
+    skitype VARCHAR,
+    comments VARCHAR,
+    image_url VARCHAR);
 

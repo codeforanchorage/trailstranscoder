@@ -10,7 +10,9 @@ INSERT INTO merged_trails (
     class,
     lighting,
     difficulty,
-    skitype)
+    skitype,
+    comments,
+    image_url)
 SELECT GEOMETRY,
     source,
     system,
@@ -20,7 +22,9 @@ SELECT GEOMETRY,
     class,
     lighting,
     difficulty,
-    skitype
+    skitype,
+    comments,
+    image_url
 FROM muni_trails
 UNION
 SELECT GEOMETRY,
@@ -32,7 +36,9 @@ SELECT GEOMETRY,
     class,
     lighting,
     difficulty,
-    skitype
+    skitype,
+    comments,
+    image_url
 FROM chugach_trails
 UNION
 SELECT GEOMETRY,
@@ -44,7 +50,9 @@ SELECT GEOMETRY,
     class,
     lighting,
     difficulty,
-    skitype
+    skitype,
+    comments,
+    image_url
 FROM matsu_trails
 UNION
 SELECT GEOMETRY,
@@ -56,7 +64,9 @@ SELECT GEOMETRY,
     class,
     lighting,
     difficulty,
-    skitype
+    skitype,
+    comments,
+    image_url
 FROM hatcher_pass_trails
 UNION
 SELECT GEOMETRY,
@@ -68,6 +78,8 @@ SELECT GEOMETRY,
     class,
     lighting,
     difficulty,
-    skitype
+    skitype,
+    comments,
+    image_url
 FROM kincaid_singletrack_trails
 
