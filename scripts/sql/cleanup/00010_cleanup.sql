@@ -27,7 +27,8 @@ INSERT INTO cleaned_trails
         END AS handicap_accessible,
         NULL AS comments,
         NULL AS image_url,
-        NULL AS path
+        NULL AS path,
+        NULL AS extent
     FROM merged_trails;
 
 -- Some tweaks

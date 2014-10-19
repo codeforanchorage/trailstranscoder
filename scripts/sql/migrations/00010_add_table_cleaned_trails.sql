@@ -16,7 +16,8 @@ CREATE TABLE cleaned_trails (
     handicap_accessible VARCHAR,
     comments VARCHAR,
     image_url VARCHAR,
-    path VARCHAR);
+    path VARCHAR,
+    extent VARCHAR);
 
 -- In order to take advantage of ogr2ogr, we need to make sure that the DB is aware of this layer.
 INSERT INTO geometry_columns (
