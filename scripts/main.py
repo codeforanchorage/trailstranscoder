@@ -13,13 +13,15 @@ from shutil import rmtree
 from subprocess import call
 import sqlite3
 import collections
+import ogr
+import json
 
 # Local imports
 import configs
 
 def buildOpts(config, outFormat, outPath):
     """Generates a call to ogr2ogr"""
-    opts = ["ogr2ogr", "-f", outFormat, outPath]
+    opts = ["ogr2ogr", "-f", outFormat, outPath, "-dim", "2"] # force some of our 3d data to 2d
     flagMap = {
         "sql": "-sql",
         "tsrs": "-t_srs",
@@ -156,6 +158,37 @@ def escape_ogr(s):
         ret = ""
     return ret
 
+def extents():
+    """Iterate through sqlite db and calculate extents of each feature"""
+    conn = ogr.Open(configs.temp_path, 1)
+    layer = conn.GetLayer('cleaned_trails')
+    # http://gis.stackexchange.com/questions/109194/setfeature-creates-infinite-loop-when-updating-sqlite-feature-using-ogr
+    id = []
+    for feature in layer:
+        id.append(feature.GetFID())
+    for i in id:
+        feature = layer.GetFeature(i)
+        geom = feature.GetGeometryRef()
+        if geom:
+            json_string = geom.ExportToJson()
+            json_data = json.loads(json_string)
+            x, y = zip(*list(explode(json_data['coordinates'])))
+            feature.SetField('extent', ' '.join([str(min(x)), str(min(y)), str(max(x)), str(max(y))]))
+            layer.SetFeature(feature)
+    conn.Destroy()
+
+# http://gis.stackexchange.com/questions/90553/fiona-get-each-feature-extent-bounds
+def explode(coords):
+    """Explode a GeoJSON geometry's coordinates object and yield coordinate tuples.
+    As long as the input is conforming, the type of the geometry doesn't matter."""
+    for e in coords:
+        if isinstance(e, (float, int, long)):
+            yield coords
+            break
+        else:
+            for f in explode(e):
+                yield f
+
 def main():
     """Main workflow"""
     remove_file(configs.temp_path)
@@ -166,6 +199,8 @@ def main():
     migrate()
     # Then, apply our cleanup rules
     clean()
+    # Then, determine extents of features
+    extents()
     # Lastly, generate output
     generateJSON()
 
