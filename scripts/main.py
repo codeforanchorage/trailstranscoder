@@ -14,6 +14,7 @@ from subprocess import call
 import sqlite3
 import collections
 import ogr
+import osr
 import json
 
 # Local imports
@@ -158,10 +159,16 @@ def escape_ogr(s):
         ret = ""
     return ret
 
-def extents():
+def extents_and_distance():
     """Iterate through sqlite db and calculate extents of each feature"""
     conn = ogr.Open(configs.temp_path, 1)
     layer = conn.GetLayer('cleaned_trails')
+    # https://gist.github.com/bmcbride/9901745
+    source = osr.SpatialReference()
+    source.ImportFromEPSG(4326)
+    target = osr.SpatialReference()
+    target.ImportFromEPSG(3857)
+    transform = osr.CoordinateTransformation(source, target)
     # http://gis.stackexchange.com/questions/109194/setfeature-creates-infinite-loop-when-updating-sqlite-feature-using-ogr
     id = []
     for feature in layer:
@@ -174,6 +181,8 @@ def extents():
             json_data = json.loads(json_string)
             x, y = zip(*list(explode(json_data['coordinates'])))
             feature.SetField('extent', ' '.join([str(min(x)), str(min(y)), str(max(x)), str(max(y))]))
+            geom.Transform(transform)
+            feature.SetField('length', int(geom.Length()))
             layer.SetFeature(feature)
     conn.Destroy()
 
@@ -200,9 +209,10 @@ def main():
     # Then, apply our cleanup rules
     clean()
     # Then, determine extents of features
-    extents()
+    extents_and_distance()
     # Lastly, generate output
     generateJSON()
+
 
 if __name__ == "__main__":
     main()

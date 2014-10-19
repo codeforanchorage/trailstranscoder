@@ -28,7 +28,8 @@ INSERT INTO cleaned_trails
         NULL AS comments,
         NULL AS image_url,
         NULL AS path,
-        NULL AS extent
+        NULL AS extent,
+        NULL AS length
     FROM merged_trails;
 
 -- Some tweaks
