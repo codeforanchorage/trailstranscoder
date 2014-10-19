@@ -13,13 +13,16 @@ from shutil import rmtree
 from subprocess import call
 import sqlite3
 import collections
+import ogr
+import osr
+import json
 
 # Local imports
 import configs
 
 def buildOpts(config, outFormat, outPath):
     """Generates a call to ogr2ogr"""
-    opts = ["ogr2ogr", "-f", outFormat, outPath]
+    opts = ["ogr2ogr", "-f", outFormat, outPath, "-dim", "2"] # force some of our 3d data to 2d
     flagMap = {
         "sql": "-sql",
         "tsrs": "-t_srs",
@@ -85,7 +88,7 @@ def clean():
     """Run the cleanup protocols"""
     runScripts(configs.cleanup_path)
 
-def generateJSON(path):
+def generateJSON():
     """This could be smarter, but right now the idea is to loop over all of the
         v_cleaned_trails, and dump a structured set of GeoJSON files to disk"""
     outpath = configs.output_path + "/all.geojson"
@@ -156,6 +159,45 @@ def escape_ogr(s):
         ret = ""
     return ret
 
+def extents_and_distance():
+    """Iterate through sqlite db and calculate extents of each feature"""
+    conn = ogr.Open(configs.temp_path, 1)
+    layer = conn.GetLayer('cleaned_trails')
+    # https://gist.github.com/bmcbride/9901745
+    source = osr.SpatialReference()
+    source.ImportFromEPSG(4326)
+    target = osr.SpatialReference()
+    target.ImportFromEPSG(3857)
+    transform = osr.CoordinateTransformation(source, target)
+    # http://gis.stackexchange.com/questions/109194/setfeature-creates-infinite-loop-when-updating-sqlite-feature-using-ogr
+    id = []
+    for feature in layer:
+        id.append(feature.GetFID())
+    for i in id:
+        feature = layer.GetFeature(i)
+        geom = feature.GetGeometryRef()
+        if geom:
+            json_string = geom.ExportToJson()
+            json_data = json.loads(json_string)
+            x, y = zip(*list(explode(json_data['coordinates'])))
+            feature.SetField('extent', ' '.join([str(min(x)), str(min(y)), str(max(x)), str(max(y))]))
+            geom.Transform(transform)
+            feature.SetField('length', int(geom.Length()))
+            layer.SetFeature(feature)
+    conn.Destroy()
+
+# http://gis.stackexchange.com/questions/90553/fiona-get-each-feature-extent-bounds
+def explode(coords):
+    """Explode a GeoJSON geometry's coordinates object and yield coordinate tuples.
+    As long as the input is conforming, the type of the geometry doesn't matter."""
+    for e in coords:
+        if isinstance(e, (float, int, long)):
+            yield coords
+            break
+        else:
+            for f in explode(e):
+                yield f
+
 def main():
     """Main workflow"""
     remove_file(configs.temp_path)
@@ -166,8 +208,11 @@ def main():
     migrate()
     # Then, apply our cleanup rules
     clean()
+    # Then, determine extents of features
+    extents_and_distance()
     # Lastly, generate output
-    generateJSON(configs.temp_path)
+    generateJSON()
+
 
 if __name__ == "__main__":
     main()
