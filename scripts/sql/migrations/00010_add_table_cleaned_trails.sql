@@ -15,5 +15,6 @@ CREATE TABLE cleaned_trails (
     direction VARCHAR,
     handicap_accessible VARCHAR,
     comments VARCHAR,
-    image_url VARCHAR);
+    image_url VARCHAR,
+    path VARCHAR);
 
