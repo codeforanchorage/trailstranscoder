@@ -85,7 +85,7 @@ def clean():
     """Run the cleanup protocols"""
     runScripts(configs.cleanup_path)
 
-def generateJSON(path):
+def generateJSON():
     """This could be smarter, but right now the idea is to loop over all of the
         v_cleaned_trails, and dump a structured set of GeoJSON files to disk"""
     outpath = configs.output_path + "/all.geojson"
@@ -167,7 +167,7 @@ def main():
     # Then, apply our cleanup rules
     clean()
     # Lastly, generate output
-    generateJSON(configs.temp_path)
+    generateJSON()
 
 if __name__ == "__main__":
     main()
