@@ -24,7 +24,8 @@ INSERT INTO cleaned_trails
         '2way' AS direction,
         CASE
             WHEN surface='Asphalt' THEN 'Yes' ELSE 'No'
-        END AS handicap_accessible
+        END AS handicap_accessible,
+        NULL AS path
     FROM merged_trails;
 
 -- Some tweaks
@@ -43,3 +44,7 @@ WHERE system LIKE '%chester creek trail%';
 UPDATE cleaned_trails SET ski_difficulty = NULL, ski_mode = null
 WHERE winter_usage & 4 = 0;
 
+UPDATE cleaned_trails SET path = lower(source) || '/' || replace(lower(system), ' ', '_') || '/' || replace(lower(name), ' ', '_') || '.geojson'
+WHERE source IS NOT NULL
+AND system IS NOT NULL
+AND name IS NOT NULL;

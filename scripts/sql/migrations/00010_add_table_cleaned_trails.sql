@@ -13,5 +13,6 @@ CREATE TABLE cleaned_trails (
     ski_difficulty VARCHAR,
     ski_mode VARCHAR,
     direction VARCHAR,
-    handicap_accessible VARCHAR);
+    handicap_accessible VARCHAR,
+    path VARCHAR);
 
