@@ -181,13 +181,10 @@ def extents_and_distance():
             json_data = json.loads(json_string)
             x, y = zip(*list(explode(json_data['coordinates'])))
             feature.SetField('extent', ' '.join([str(min(x)), str(min(y)), str(max(x)), str(max(y))]))
-            
-            #this switches to a meter coordinate system for the purpose of calculating distance
-            geom.Transform(transform)
-            feature.SetField('length', int(geom.Length()))
-
-            #this switches back to the original coordinate system so that we don't end up with the polyline being in meters
-            geom.Transform(osr.CoordinateTransformation(target, source))
+            # this switches to a meter coordinate system for the purpose of calculating distance
+            geom_clone = geom.Clone()
+            geom_clone.Transform(transform)
+            feature.SetField('length', int(geom_clone.Length()))
             layer.SetFeature(feature)
     conn.Destroy()
 
