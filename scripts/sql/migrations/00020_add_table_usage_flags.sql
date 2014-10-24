@@ -7,12 +7,12 @@ CREATE TABLE usage_flags (
 -- Insert some defaults into usage_flags
 INSERT INTO usage_flags
 VALUES
-    (1, 'Foot'),
+    (1, 'Run/Walk'),
     (2, 'Bike'),
     (4, 'Ski'),
     (8, 'Snowshoe'),
     (16, 'Skijor'),
     (32, 'Mush'),
-    (64, 'Dog Walk'),
-    (128, 'Off-leash Dog')
+    (64, 'On-leash Dogs'),
+    (128, 'Off-leash Dogs')
 
