@@ -88,6 +88,18 @@ def clean():
     """Run the cleanup protocols"""
     runScripts(configs.cleanup_path)
 
+def generatePointsJSON():
+    outpath = configs.output_path + "/points.geojson"
+    remove_file(outpath)
+    # All
+    config = collections.OrderedDict()
+    config["tsrs"] = "crs:84"
+    config["ssrs"] = "crs:84"
+    config["source"] = configs.temp_path
+    config["sql"] = "SELECT * FROM v_merged_points;"
+    opts = buildOpts(config, "GeoJSON", outpath)
+    call(opts)
+
 def generateJSON():
     """This could be smarter, but right now the idea is to loop over all of the
         v_cleaned_trails, and dump a structured set of GeoJSON files to disk"""
@@ -214,7 +226,7 @@ def main():
     extents_and_distance()
     # Lastly, generate output
     generateJSON()
-
+    generatePointsJSON()
 
 if __name__ == "__main__":
     main()
