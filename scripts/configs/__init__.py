@@ -11,6 +11,7 @@ from .chugach import chugach_all
 from .hatcher import hatcher_all
 from .matsu import matsu_all
 from .kincaid_singletrack import kincaid_all
+from .kincaid_trailheads import kincaid_trailheads
 
 configList = (
     muni_all, # This config needs to come first
@@ -18,5 +19,6 @@ configList = (
     hatcher_all,
     matsu_all,
     kincaid_all,
+    kincaid_trailheads,
     )
 
