@@ -16,6 +16,7 @@ import collections
 import ogr
 import osr
 import json
+import hashlib
 
 # Local imports
 import configs
@@ -113,7 +114,7 @@ def generateJSON():
     config["sql"] = "SELECT * FROM v_cleaned_trails;"
     opts = buildOpts(config, "GeoJSON", outpath)
     call(opts)
-    
+
     # Sources
     conn = sqlite3.connect(configs.temp_path)
     c1 = conn.cursor()
@@ -191,6 +192,8 @@ def extents_and_distance():
         geom = feature.GetGeometryRef()
         if geom:
             json_string = geom.ExportToJson()
+            hashed_json = hashlib.sha1(json_string).hexdigest()
+            feature.SetField('geometry_hash', hashed_json)
             json_data = json.loads(json_string)
             x, y = zip(*list(explode(json_data['coordinates'])))
             feature.SetField('extent', ' '.join([str(min(x)), str(min(y)), str(max(x)), str(max(y))]))

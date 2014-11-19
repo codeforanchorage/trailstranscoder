@@ -20,7 +20,9 @@ CREATE TABLE cleaned_trails (
     image_url VARCHAR,
     path VARCHAR,
     extent VARCHAR,
-    length INTEGER);
+    length INTEGER,
+    geometry_hash VARCHAR --stores a SHA hash of the geojson representation of the GEOMETRY field
+);
 
 -- In order to take advantage of ogr2ogr, we need to make sure that the DB is aware of this layer.
 INSERT INTO geometry_columns (
