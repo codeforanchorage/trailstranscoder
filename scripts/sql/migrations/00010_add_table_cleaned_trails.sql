@@ -13,6 +13,8 @@ CREATE TABLE cleaned_trails (
     ski_difficulty VARCHAR,
     ski_mode VARCHAR,
     direction VARCHAR,
+    summer_direction VARCHAR,
+    winter_direction VARCHAR,
     handicap_accessible VARCHAR,
     comments VARCHAR,
     image_url VARCHAR,

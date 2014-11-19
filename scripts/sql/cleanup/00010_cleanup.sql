@@ -22,6 +22,8 @@ INSERT INTO cleaned_trails
         COALESCE(difficulty, 'Unknown'),
         COALESCE(skitype, 'Both'),
         '2way' AS direction,
+        '2way' as summer_direction,
+        '2way' as winter_direction,
         CASE
             WHEN surface='Asphalt' THEN 'Yes' ELSE 'No'
         END AS handicap_accessible,
