@@ -113,6 +113,7 @@ def generateJSON():
     config["sql"] = "SELECT * FROM v_cleaned_trails;"
     opts = buildOpts(config, "GeoJSON", outpath)
     call(opts)
+    
     # Sources
     conn = sqlite3.connect(configs.temp_path)
     c1 = conn.cursor()
