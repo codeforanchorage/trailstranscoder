@@ -5,6 +5,7 @@ temp_path = "../temp-data/temp.sqlite"
 migrations_path = "sql/migrations"
 cleanup_path = "sql/cleanup"
 output_path = "../output"
+adjustments_path = "sql/adjustments"
 
 from .muni import muni_all
 from .chugach import chugach_all

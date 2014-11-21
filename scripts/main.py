@@ -17,6 +17,7 @@ import ogr
 import osr
 import json
 import hashlib
+import sys
 
 # Local imports
 import configs
@@ -89,6 +90,10 @@ def clean():
     """Run the cleanup protocols"""
     runScripts(configs.cleanup_path)
 
+def adjust():
+    """Run the adjustment scripts"""
+    runScripts(configs.adjustments_path)
+
 def generatePointsJSON():
     outpath = configs.output_path + "/points.geojson"
     remove_file(outpath)
@@ -101,7 +106,7 @@ def generatePointsJSON():
     opts = buildOpts(config, "GeoJSON", outpath)
     call(opts)
 
-def generateJSON():
+def generateJSON(generateIndividualFiles):
     """This could be smarter, but right now the idea is to loop over all of the
         v_cleaned_trails, and dump a structured set of GeoJSON files to disk"""
     outpath = configs.output_path + "/all.geojson"
@@ -115,54 +120,55 @@ def generateJSON():
     opts = buildOpts(config, "GeoJSON", outpath)
     call(opts)
 
-    # Sources
-    conn = sqlite3.connect(configs.temp_path)
-    c1 = conn.cursor()
-    for source in c1.execute("SELECT DISTINCT source FROM v_cleaned_trails;"):
-        config["sql"] = "SELECT * FROM v_cleaned_trails WHERE source='{0}'".format(source[0])
-        outpath = "/".join([configs.output_path, source[0].lower()])
-        remove_path(outpath)
-        makedirs(outpath)
-        opts = buildOpts(config, "GeoJSON", outpath + "/all.geojson")
-        call(opts)
-        # Sources + Systems
-        c2 = conn.cursor()
-        q2 = """SELECT DISTINCT system
-                FROM v_cleaned_trails
-                WHERE source='{0}';""".format(source[0])
-        for system in c2.execute(q2):
-            config["sql"] = """SELECT *
-                               FROM v_cleaned_trails
-                               WHERE source='{0}'
-                               AND system='{1}';""".format(source[0], system[0])
-            if not system[0]:
-                s = 'none'
-            else:
-                s = system[0].replace(' ', '_').lower()
-            outpath = "/".join([configs.output_path, source[0].lower(), s])
+    if generateIndividualFiles == True:
+        # Sources
+        conn = sqlite3.connect(configs.temp_path)
+        c1 = conn.cursor()
+        for source in c1.execute("SELECT DISTINCT source FROM v_cleaned_trails;"):
+            config["sql"] = "SELECT * FROM v_cleaned_trails WHERE source='{0}'".format(source[0])
+            outpath = "/".join([configs.output_path, source[0].lower()])
+            remove_path(outpath)
             makedirs(outpath)
             opts = buildOpts(config, "GeoJSON", outpath + "/all.geojson")
             call(opts)
-            # Sources + Systems + Names
-            c3 = conn.cursor()
-            q3 = """SELECT DISTINCT name
+            # Sources + Systems
+            c2 = conn.cursor()
+            q2 = """SELECT DISTINCT system
                     FROM v_cleaned_trails
-                    WHERE source='{0}'
-                    AND system='{1}';""".format(source[0], system[0])
-            for name in c3.execute(q3):
+                    WHERE source='{0}';""".format(source[0])
+            for system in c2.execute(q2):
                 config["sql"] = """SELECT *
                                    FROM v_cleaned_trails
                                    WHERE source='{0}'
-                                   AND system='{1}'
-                                   AND name='{2}';""".format(source[0], system[0], escape_ogr(name[0]))
-                if not name[0]:
-                    name = 'none'
+                                   AND system='{1}';""".format(source[0], system[0])
+                if not system[0]:
+                    s = 'none'
                 else:
-                    name = name[0].replace(' ', '_').lower()
-                outpath = "/".join([configs.output_path, source[0].lower(), s, name+".geojson"])
-                opts = buildOpts(config, "GeoJSON", outpath)
+                    s = system[0].replace(' ', '_').lower()
+                outpath = "/".join([configs.output_path, source[0].lower(), s])
+                makedirs(outpath)
+                opts = buildOpts(config, "GeoJSON", outpath + "/all.geojson")
                 call(opts)
-    conn.close()
+                # Sources + Systems + Names
+                c3 = conn.cursor()
+                q3 = """SELECT DISTINCT name
+                        FROM v_cleaned_trails
+                        WHERE source='{0}'
+                        AND system='{1}';""".format(source[0], system[0])
+                for name in c3.execute(q3):
+                    config["sql"] = """SELECT *
+                                       FROM v_cleaned_trails
+                                       WHERE source='{0}'
+                                       AND system='{1}'
+                                       AND name='{2}';""".format(source[0], system[0], escape_ogr(name[0]))
+                    if not name[0]:
+                        name = 'none'
+                    else:
+                        name = name[0].replace(' ', '_').lower()
+                    outpath = "/".join([configs.output_path, source[0].lower(), s, name+".geojson"])
+                    opts = buildOpts(config, "GeoJSON", outpath)
+                    call(opts)
+        conn.close()
 
 def escape_ogr(s):
     """We need to escape single quotes for OGR SQLite calls"""
@@ -172,6 +178,24 @@ def escape_ogr(s):
     else:
         ret = ""
     return ret
+
+def add_geometry_hashes():
+    """iterate through trails and calculate the hash for each GEOMETRY field"""
+    conn = ogr.Open(configs.temp_path, 1)
+    layer = conn.GetLayer('cleaned_trails')
+    # http://gis.stackexchange.com/questions/109194/setfeature-creates-infinite-loop-when-updating-sqlite-feature-using-ogr
+    id = []
+    for feature in layer:
+        id.append(feature.GetFID())
+    for i in id:
+        feature = layer.GetFeature(i)
+        geom = feature.GetGeometryRef()
+        if geom:
+            json_string = geom.ExportToJson()
+            hashed_json = hashlib.sha1(json_string).hexdigest()
+            feature.SetField('geometry_hash', hashed_json)
+            layer.SetFeature(feature)
+    conn.Destroy()
 
 def extents_and_distance():
     """Iterate through sqlite db and calculate extents of each feature"""
@@ -192,8 +216,6 @@ def extents_and_distance():
         geom = feature.GetGeometryRef()
         if geom:
             json_string = geom.ExportToJson()
-            hashed_json = hashlib.sha1(json_string).hexdigest()
-            feature.SetField('geometry_hash', hashed_json)
             json_data = json.loads(json_string)
             x, y = zip(*list(explode(json_data['coordinates'])))
             feature.SetField('extent', ' '.join([str(min(x)), str(min(y)), str(max(x)), str(max(y))]))
@@ -218,6 +240,7 @@ def explode(coords):
 
 def main():
     """Main workflow"""
+
     remove_file(configs.temp_path)
     # First import all source data into their own tables
     for config in configs.configList:
@@ -226,10 +249,23 @@ def main():
     migrate()
     # Then, apply our cleanup rules
     clean()
+
+    # Then, calculate the hashes for all GEOMETRY fields
+    # this enables us to apply adjustments to individual trail segments downstream
+    add_geometry_hashes()
+
+    # Then, actually apply the adjustments
+    adjust()
+
     # Then, determine extents of features
     extents_and_distance()
+    
     # Lastly, generate output
-    generateJSON()
+    if "--all" in sys.argv or "-a" in sys.argv:
+        generateJSON(True) #do generate the individual trail files
+    else:
+        generateJSON(False) #don't generate the individual files
+
     generatePointsJSON()
 
 if __name__ == "__main__":
