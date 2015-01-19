@@ -1,0 +1,11 @@
+<OGRVRTDataSource>
+    <OGRVRTLayer name="hillside">
+        <!--
+        	note that this is relative to the scripts directory
+        -->
+        <SrcDataSource>../source-data/POIs/hillside.csv</SrcDataSource>
+        <GeometryType>wkbPoint</GeometryType>
+        <LayerSRS>WGS84</LayerSRS>
+        <GeometryField encoding="PointFromColumns" x="longitude" y="latitude"/>
+    </OGRVRTLayer>
+</OGRVRTDataSource>
