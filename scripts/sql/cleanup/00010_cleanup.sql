@@ -12,11 +12,11 @@ INSERT INTO cleaned_trails
         CASE
             WHEN system LIKE '%skijor%' THEN 16
             WHEN system LIKE '%ski%' AND NOT system LIKE '%skijor%' THEN 4
-            WHEN system LIKE '%bike%' OR system LIKE '%single track%' THEN 2
+            WHEN system LIKE '%bike%' OR system LIKE '%single track%' THEN 1 | 2 | 64
             ELSE 1 | 2 | 64
         END AS winter_usage,
         CASE
-            WHEN system LIKE '%bike%' OR system LIKE '%single track%' THEN 2
+            WHEN system LIKE '%bike%' OR system LIKE '%single track%' THEN 1 | 2 | 64
             ELSE 1 | 2 | 64
         END AS summer_usage,
         COALESCE(difficulty, 'Unknown'),
